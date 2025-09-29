@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=livestream_db
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - JWT_SECRET=your_jwt_secret_key
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  # SRS Media Server
+  srs:
+    image: ossrs/srs:5
+    ports:
+      - "1935:1935"   # RTMP
+      - "8080:8080"   # HTTP API
+      - "1985:1985"   # HTTP Callback
+      - "8000:8000"   # HLS
+    volumes:
+      - ./srs/conf/srs.conf:/usr/local/srs/conf/srs.conf
+    command: ["/usr/local/srs/objs/srs", "-c", "/usr/local/srs/conf/srs.conf"]
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=livestream_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Frontend Web Interface
+  frontend:
+    build: ./frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3000
+      - REACT_APP_SRS_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:

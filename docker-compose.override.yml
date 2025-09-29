@@ -1,0 +1,39 @@
+# Docker Compose override for development
+# This file extends docker-compose.yml with development-specific configurations
+
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      - NODE_ENV=development
+      - DEBUG=*
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+
+  frontend:
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_API_URL=http://localhost:3000
+      - REACT_APP_SRS_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm start
+
+  srs:
+    volumes:
+      - ./srs/conf:/usr/local/srs/conf
+      - ./srs/logs:/usr/local/srs/objs/nginx/html
+    command: ["/usr/local/srs/objs/srs", "-c", "/usr/local/srs/conf/srs.conf"]
+
+  postgres:
+    environment:
+      - POSTGRES_DB=livestream_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
